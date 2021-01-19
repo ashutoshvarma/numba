@@ -1913,22 +1913,22 @@ class TestOverloadPreferLiteral(TestCase):
 
 class TestIntrinsicPreferLiteral(TestCase):
     def test_intrinsic(self):
-        int64_100 = ir.Constant(ir.IntType(64), 100)
-        int64_cafe = ir.Constant(ir.IntType(64), 0xcafe)
+        btrue = ir.Constant(ir.IntType(1), 1)
+        bfalse = ir.Constant(ir.IntType(1), 0)
 
         def intrin(context, x):
-            sig = signature(types.int64, x)
+            sig = signature(types.boolean, x)
             if isinstance(x, types.IntegerLiteral):
                 # With prefer_literal=False, this branch will not be reached
                 if x.literal_value == 1:
                     def codegen(context, builder, signature, args):
-                        return int64_cafe
+                        return btrue
                     return sig, codegen
                 else:
                     raise errors.TypingError('literal value')
             else:
                 def codegen(context, builder, signature, args):
-                    return builder.mul(args[0], int64_100)
+                    return bfalse
                 return sig, codegen
 
         prefer_lit = intrinsic(prefer_literal=True)(intrin)
@@ -1936,21 +1936,19 @@ class TestIntrinsicPreferLiteral(TestCase):
 
         @njit
         def check_prefer_lit(x):
-            return prefer_lit(1), prefer_lit(2), prefer_lit(x)
+            return prefer_lit(1), prefer_lit(x)
 
-        a, b, c = check_prefer_lit(3)
-        self.assertEqual(a, 0xcafe)
-        self.assertEqual(b, 200)
-        self.assertEqual(c, 300)
+        a, b = check_prefer_lit(2)
+        self.assertEqual(a, True)
+        self.assertEqual(b, False)
 
         @njit
         def check_non_lit(x):
-            return non_lit(1), non_lit(2), non_lit(x)
+            return non_lit(1), non_lit(x)
 
-        a, b, c = check_non_lit(3)
-        self.assertEqual(a, 100)
-        self.assertEqual(b, 200)
-        self.assertEqual(c, 300)
+        a, b = check_non_lit(3)
+        self.assertEqual(a, False)
+        self.assertEqual(b, False)
 
 
 if __name__ == "__main__":
