@@ -1913,22 +1913,27 @@ class TestOverloadPreferLiteral(TestCase):
 
 class TestIntrinsicPreferLiteral(TestCase):
     def test_intrinsic(self):
-        btrue = ir.Constant(ir.IntType(1), 1)
-        bfalse = ir.Constant(ir.IntType(1), 0)
+        # int64_100 = ir.Constant(ir.IntType(64), 100)
+        int64_cafe = ir.Constant(ir.IntType(64), 0xcafe)
 
         def intrin(context, x):
-            sig = signature(types.boolean, x)
+            sig = signature(types.int_, x)
             if isinstance(x, types.IntegerLiteral):
                 # With prefer_literal=False, this branch will not be reached
                 if x.literal_value == 1:
                     def codegen(context, builder, signature, args):
-                        return btrue
+                        atype = signature.args[0]
+                        llrtype = context.get_value_type(atype)
+                        return ir.Constant(llrtype, 0xcafe)
                     return sig, codegen
                 else:
                     raise errors.TypingError('literal value')
             else:
                 def codegen(context, builder, signature, args):
-                    return bfalse
+                    atype = signature.return_type
+                    llrtype = context.get_value_type(atype)
+                    int_100 = ir.Constant(llrtype, 100)
+                    return builder.mul(args[0], int_100)
                 return sig, codegen
 
         prefer_lit = intrinsic(prefer_literal=True)(intrin)
@@ -1936,19 +1941,21 @@ class TestIntrinsicPreferLiteral(TestCase):
 
         @njit
         def check_prefer_lit(x):
-            return prefer_lit(1), prefer_lit(x)
+            return prefer_lit(1), prefer_lit(2), prefer_lit(x)
 
-        a, b = check_prefer_lit(2)
-        self.assertEqual(a, True)
-        self.assertEqual(b, False)
+        a, b, c = check_prefer_lit(3)
+        self.assertEqual(a, 0xcafe)
+        self.assertEqual(b, 200)
+        self.assertEqual(c, 300)
 
         @njit
         def check_non_lit(x):
-            return non_lit(1), non_lit(x)
+            return non_lit(1), non_lit(2), non_lit(x)
 
-        a, b = check_non_lit(3)
-        self.assertEqual(a, False)
-        self.assertEqual(b, False)
+        a, b, c = check_non_lit(3)
+        self.assertEqual(a, 100)
+        self.assertEqual(b, 200)
+        self.assertEqual(c, 300)
 
 
 if __name__ == "__main__":
