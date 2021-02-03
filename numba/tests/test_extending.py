@@ -1913,9 +1913,6 @@ class TestOverloadPreferLiteral(TestCase):
 
 class TestIntrinsicPreferLiteral(TestCase):
     def test_intrinsic(self):
-        # int64_100 = ir.Constant(ir.IntType(64), 100)
-        int64_cafe = ir.Constant(ir.IntType(64), 0xcafe)
-
         def intrin(context, x):
             sig = signature(types.intp, x)
             if isinstance(x, types.IntegerLiteral):
