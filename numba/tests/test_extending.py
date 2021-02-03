@@ -1917,7 +1917,7 @@ class TestIntrinsicPreferLiteral(TestCase):
         int64_cafe = ir.Constant(ir.IntType(64), 0xcafe)
 
         def intrin(context, x):
-            sig = signature(types.int_, x)
+            sig = signature(types.intp, x)
             if isinstance(x, types.IntegerLiteral):
                 # With prefer_literal=False, this branch will not be reached
                 if x.literal_value == 1:
