@@ -345,7 +345,7 @@ class Array(object):
         if order not in 'CFA':
             raise ValueError('order not C|F|A')
 
-        if self.ndim <= 1:
+        if self.ndim < 1:
             return self
 
         elif (order in 'CA' and self.is_c_contig or
@@ -354,7 +354,8 @@ class Array(object):
             newstrides = (self.itemsize,)
             arr = self.from_desc(self.extent.begin, newshape, newstrides,
                                  self.itemsize)
-            return arr, list(self.iter_contiguous_extent())
+            extent = list(self.iter_contiguous_extent()) if self.ndim > 1 else [self.extent]
+            return arr, extent
 
         else:
             raise NotImplementedError("ravel on non-contiguous array")
