@@ -90,16 +90,17 @@ class UFuncMechanism(object):
         Get all arguments in array form
         """
         for i, arg in enumerate(self.args):
-            if isinstance(arg, np.ndarray):
-                self.arrays[i] = arg
-            elif self.is_device_array(arg):
+            if self.is_device_array(arg):
                 self.arrays[i] = self.as_device_array(arg)
             elif isinstance(arg, (int, float, complex, np.number)):
                 # Is scalar
                 self.scalarpos.append(i)
             else:
-                raise TypeError("argument #%d has invalid type of %s" \
-                % (i + 1, type(arg) ))
+                array = np.asarray(arg)
+                if array.dtype == np.object:
+                    fmt = "argument #%d has invalid type of %s"
+                    raise TypeError(fmt % (i + 1, type(arg) ))
+                self.arrays[i] = array
 
     def _fill_argtypes(self):
         """
